@@ -1,67 +1,129 @@
 "use client";
 
+import Navbar from "@/components/Navbar";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { users } from "../lib/users";
+
+type Customer = {
+  id: number;
+  company: string;
+  contactName?: string;
+  phone?: string;
+  address?: string;
+  taxOffice?: string;
+  taxNumber?: string;
+  username: string;
+  password: string;
+  role: "customer";
+  status: "Aktif" | "Pasif";
+};
 
 export default function LoginPage() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const router = useRouter();
 
-  const handleLogin = () => {
-    const user = users.find(
-      (u) => u.username === username && u.password === password
-    );
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
 
-    if (!user) {
-      setError("Kullanıcı adı veya şifre yanlış.");
+  const handleLogin = () => {
+    const trimmedUsername = username.trim();
+    const trimmedPassword = password.trim();
+
+    // Admin girişi
+    if (trimmedUsername === "admin" && trimmedPassword === "14531453") {
+      localStorage.setItem(
+        "loggedInUser",
+        JSON.stringify({
+          username: "admin",
+          company: "Check Bag",
+          role: "admin",
+        })
+      );
+
+      alert("Admin girişi başarılı.");
+      router.push("/admin");
       return;
     }
 
-    localStorage.setItem("loggedInUser", JSON.stringify(user));
-    setError("");
+    // Müşteri kontrolü
+    const storedCustomers = localStorage.getItem("customers");
+    const customers: Customer[] = storedCustomers
+      ? JSON.parse(storedCustomers)
+      : [];
 
-    if (user.role === "admin") {
-      router.push("/admin");
-    } else {
-      router.push("/products");
+    const foundCustomer = customers.find(
+      (customer) =>
+        customer.username === trimmedUsername &&
+        customer.password === trimmedPassword
+    );
+
+    if (!foundCustomer) {
+      alert("Kullanıcı adı veya şifre yanlış.");
+      return;
     }
+
+    if (foundCustomer.status !== "Aktif") {
+      alert("Bu hesap pasif durumda. Lütfen yönetici ile iletişime geçin.");
+      return;
+    }
+
+    localStorage.setItem(
+      "loggedInUser",
+      JSON.stringify({
+        username: foundCustomer.username,
+        company: foundCustomer.company,
+        role: "customer",
+      })
+    );
+
+    alert("Giriş başarılı.");
+    router.push("/products");
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-sm">
-        <h1 className="mb-6 text-center text-3xl font-bold">Giriş Yap</h1>
+    <>
+      <Navbar />
 
-        <input
-          type="text"
-          placeholder="Kullanıcı adı"
-          className="mb-3 w-full rounded border p-2"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-        />
+      <main className="page-shell">
+        <div className="mx-auto mt-10 max-w-md rounded-2xl bg-white p-8 shadow-sm">
+          <h1 className="mb-2 text-3xl font-bold">Giriş Yap</h1>
+          <p className="mb-6 text-sm text-gray-600">
+            Yetkili müşteri hesabı ile giriş yapabilirsiniz.
+          </p>
 
-        <input
-          type="password"
-          placeholder="Şifre"
-          className="mb-3 w-full rounded border p-2"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+          <div className="space-y-4">
+            <div>
+              <label className="mb-2 block text-sm font-medium">
+                Kullanıcı Adı
+              </label>
+              <input
+                type="text"
+                className="w-full rounded-lg border px-4 py-2"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Kullanıcı adınızı girin"
+              />
+            </div>
 
-        {error && (
-          <p className="mb-3 text-sm font-medium text-red-600">{error}</p>
-        )}
+            <div>
+              <label className="mb-2 block text-sm font-medium">Şifre</label>
+              <input
+                type="password"
+                className="w-full rounded-lg border px-4 py-2"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Şifrenizi girin"
+              />
+            </div>
 
-        <button
-          onClick={handleLogin}
-          className="w-full rounded bg-black px-6 py-2 text-white"
-        >
-          Giriş Yap
-        </button>
-      </div>
-    </main>
+            <button
+              onClick={handleLogin}
+              className="w-full rounded-lg bg-black px-4 py-3 text-white"
+            >
+              Giriş Yap
+            </button>
+          </div>
+        </div>
+      </main>
+    </>
   );
 }

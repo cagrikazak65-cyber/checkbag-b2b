@@ -1,10 +1,23 @@
 "use client";
 
 import Navbar from "@/components/Navbar";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+
+type Product = {
+  id: number;
+  name: string;
+  category: string;
+  price: string;
+  stockType: "quantity" | "ask";
+  stockQuantity: number | null;
+  description?: string;
+  image?: string;
+  status: "Aktif" | "Pasif";
+};
 
 type ProductForm = {
+  id: number;
   name: string;
   category: string;
   price: string;
@@ -15,65 +28,85 @@ type ProductForm = {
   status: "Aktif" | "Pasif";
 };
 
-export default function NewProductPage() {
+export default function EditProductPage() {
+  const params = useParams();
   const router = useRouter();
+  const [form, setForm] = useState<ProductForm | null>(null);
 
-  const [form, setForm] = useState<ProductForm>({
-    name: "",
-    category: "",
-    price: "",
-    stockType: "quantity",
-    stockQuantity: "",
-    description: "",
-    image: "",
-    status: "Aktif",
-  });
+  useEffect(() => {
+    const stored = localStorage.getItem("adminProducts");
+    if (!stored) return;
+
+    const products: Product[] = JSON.parse(stored);
+    const found = products.find((p) => String(p.id) === String(params.id));
+
+    if (!found) return;
+
+    setForm({
+      id: found.id,
+      name: found.name,
+      category: found.category,
+      price: found.price,
+      stockType: found.stockType,
+      stockQuantity:
+        found.stockQuantity !== null ? String(found.stockQuantity) : "",
+      description: found.description || "",
+      image: found.image || "",
+      status: found.status,
+    });
+  }, [params.id]);
 
   const handleSave = () => {
-    if (!form.name || !form.category || !form.price || !form.description) {
-      alert("Lutfen gerekli alanlari doldurun.");
-      return;
-    }
-
-    if (form.stockType === "quantity" && !form.stockQuantity) {
-      alert("Stok adedi girmeniz gerekiyor.");
-      return;
-    }
+    if (!form) return;
 
     const stored = localStorage.getItem("adminProducts");
-    const products = stored ? JSON.parse(stored) : [];
+    if (!stored) return;
 
-    const newProduct = {
-      id: Date.now(),
-      name: form.name,
-      category: form.category,
-      price: form.price,
-      stockType: form.stockType,
-      stockQuantity:
-        form.stockType === "quantity" ? Number(form.stockQuantity) : null,
-      description: form.description,
-      image: form.image,
-      status: form.status,
-    };
+    const products: Product[] = JSON.parse(stored);
 
-    products.push(newProduct);
-    localStorage.setItem("adminProducts", JSON.stringify(products));
+    const updatedProducts = products.map((product) =>
+      product.id === form.id
+        ? {
+            ...product,
+            name: form.name,
+            category: form.category,
+            price: form.price,
+            stockType: form.stockType,
+            stockQuantity:
+              form.stockType === "quantity"
+                ? Number(form.stockQuantity)
+                : null,
+            description: form.description,
+            image: form.image,
+            status: form.status,
+          }
+        : product
+    );
 
-    alert("Urun eklendi.");
+    localStorage.setItem("adminProducts", JSON.stringify(updatedProducts));
+    alert("Urun guncellendi.");
     router.push("/admin/products");
   };
+
+  if (!form) {
+    return (
+      <>
+        <Navbar />
+        <main className="min-h-screen bg-gray-100 p-6">Yukleniyor...</main>
+      </>
+    );
+  }
 
   return (
     <>
       <Navbar />
       <main className="min-h-screen bg-gray-100 p-6">
         <div className="mx-auto max-w-3xl rounded-2xl bg-white p-8 shadow-sm">
-          <h1 className="mb-6 text-3xl font-bold">Yeni Urun Ekle</h1>
+          <h1 className="mb-6 text-3xl font-bold">Urun Duzenle</h1>
 
           <div className="grid gap-4">
             <input
               type="text"
-              placeholder="Urun Adi"
               className="w-full rounded-lg border px-4 py-2"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -81,7 +114,6 @@ export default function NewProductPage() {
 
             <input
               type="text"
-              placeholder="Kategori"
               className="w-full rounded-lg border px-4 py-2"
               value={form.category}
               onChange={(e) => setForm({ ...form, category: e.target.value })}
@@ -89,7 +121,6 @@ export default function NewProductPage() {
 
             <input
               type="text"
-              placeholder="Fiyat"
               className="w-full rounded-lg border px-4 py-2"
               value={form.price}
               onChange={(e) => setForm({ ...form, price: e.target.value })}
@@ -114,7 +145,6 @@ export default function NewProductPage() {
               <input
                 type="number"
                 min="0"
-                placeholder="Stok Adedi"
                 className="w-full rounded-lg border px-4 py-2"
                 value={form.stockQuantity}
                 onChange={(e) => setForm({ ...form, stockQuantity: e.target.value })}
@@ -122,7 +152,6 @@ export default function NewProductPage() {
             )}
 
             <textarea
-              placeholder="Aciklama"
               className="w-full rounded-lg border px-4 py-2"
               rows={4}
               value={form.description}
@@ -138,10 +167,14 @@ export default function NewProductPage() {
 
                 const reader = new FileReader();
                 reader.onload = () => {
-                  setForm((prev) => ({
-                    ...prev,
-                    image: reader.result as string,
-                  }));
+                  setForm((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          image: reader.result as string,
+                        }
+                      : prev
+                  );
                 };
                 reader.readAsDataURL(file);
               }}
@@ -174,7 +207,7 @@ export default function NewProductPage() {
               onClick={handleSave}
               className="mt-4 rounded-lg bg-black px-6 py-3 text-white"
             >
-              Kaydet
+              Guncelle
             </button>
           </div>
         </div>

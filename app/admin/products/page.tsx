@@ -9,70 +9,42 @@ type Product = {
   name: string;
   category: string;
   price: string;
-  stock: string;
-  status: string;
+  stockType: "quantity" | "ask";
+  stockQuantity: number | null;
   description?: string;
   image?: string;
+  status: "Aktif" | "Pasif";
 };
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
 
   useEffect(() => {
-    const storedProducts = localStorage.getItem("adminProducts");
-
-    if (storedProducts) {
-      setProducts(JSON.parse(storedProducts));
-    } else {
-      const defaultProducts: Product[] = [
-        {
-          id: 1,
-          name: "Okul Cantasi",
-          category: "Okul Cantaları",
-          price: "350 TL",
-          stock: "25",
-          status: "Aktif",
-          description: "Dayanikli okul cantasi",
-          image: ""
-        },
-        {
-          id: 2,
-          name: "Kalem Kutusu",
-          category: "Kalem Kutulari",
-          price: "120 TL",
-          stock: "Sorunuz",
-          status: "Aktif",
-          description: "Sik kalem kutusu",
-          image: ""
-        },
-        {
-          id: 3,
-          name: "Beslenme Cantasi",
-          category: "Beslenme Cantaları",
-          price: "180 TL",
-          stock: "14",
-          status: "Pasif",
-          description: "Kullanisli beslenme cantasi",
-          image: ""
-        }
-      ];
-
-      localStorage.setItem("adminProducts", JSON.stringify(defaultProducts));
-      setProducts(defaultProducts);
-    }
+    const stored = localStorage.getItem("adminProducts");
+    const parsed = stored ? JSON.parse(stored) : [];
+    setProducts(parsed);
   }, []);
+
+  const handleDelete = (id: number) => {
+    const confirmDelete = confirm("Bu urunu silmek istiyor musun?");
+    if (!confirmDelete) return;
+
+    const updated = products.filter((p) => p.id !== id);
+    setProducts(updated);
+    localStorage.setItem("adminProducts", JSON.stringify(updated));
+  };
 
   return (
     <>
       <Navbar />
 
       <main className="min-h-screen bg-gray-100 p-6">
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-7xl">
           <div className="mb-6 flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold">Urun Yonetimi</h1>
               <p className="mt-2 text-sm text-gray-600">
-                Sistemdeki urunleri buradan yonetebilirsiniz.
+                Urunleri buradan yonetebilirsin.
               </p>
             </div>
 
@@ -84,42 +56,40 @@ export default function AdminProductsPage() {
             </Link>
           </div>
 
-          <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
-            <table className="w-full border-collapse">
-              <thead className="bg-gray-50 text-left">
-                <tr>
-                  <th className="px-4 py-3 text-sm font-semibold text-gray-700">
-                    Urun Adi
-                  </th>
-                  <th className="px-4 py-3 text-sm font-semibold text-gray-700">
-                    Kategori
-                  </th>
-                  <th className="px-4 py-3 text-sm font-semibold text-gray-700">
-                    Fiyat
-                  </th>
-                  <th className="px-4 py-3 text-sm font-semibold text-gray-700">
-                    Stok
-                  </th>
-                  <th className="px-4 py-3 text-sm font-semibold text-gray-700">
-                    Durum
-                  </th>
-                  <th className="px-4 py-3 text-sm font-semibold text-gray-700">
-                    Islem
-                  </th>
-                </tr>
-              </thead>
+          {products.length === 0 ? (
+            <div className="rounded-2xl bg-white p-6 shadow-sm">
+              Henuz urun yok.
+            </div>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {products.map((product) => (
+                <div
+                  key={product.id}
+                  className="overflow-hidden rounded-2xl bg-white shadow-md"
+                >
+                  <div className="aspect-[3/4] w-full bg-gray-100">
+                    {product.image ? (
+                      <img
+                        src={product.image}
+                        alt={product.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-gray-400">
+                        Gorsel yok
+                      </div>
+                    )}
+                  </div>
 
-              <tbody>
-                {products.map((product) => (
-                  <tr key={product.id} className="border-t">
-                    <td className="px-4 py-3 text-sm">{product.name}</td>
-                    <td className="px-4 py-3 text-sm">{product.category}</td>
-                    <td className="px-4 py-3 text-sm">{product.price}</td>
-                    <td className="px-4 py-3 text-sm">{product.stock}</td>
-                    <td className="px-4 py-3 text-sm">
+                  <div className="p-4">
+                    <div className="mb-2 flex justify-between">
+                      <span className="text-xs text-gray-500 uppercase">
+                        {product.category}
+                      </span>
+
                       <span
                         className={
-                          "rounded-full px-3 py-1 text-xs font-medium " +
+                          "text-xs px-2 py-1 rounded-full " +
                           (product.status === "Aktif"
                             ? "bg-green-100 text-green-700"
                             : "bg-gray-200 text-gray-700")
@@ -127,20 +97,47 @@ export default function AdminProductsPage() {
                       >
                         {product.status}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm">
+                    </div>
+
+                    <h2 className="text-lg font-semibold">{product.name}</h2>
+
+                    <p className="mt-1 text-sm text-gray-600 line-clamp-2">
+                      {product.description || "Aciklama yok"}
+                    </p>
+
+                    <div className="mt-3 text-sm space-y-1">
+                      <p>
+                        <b>Fiyat:</b> {product.price}
+                      </p>
+
+                      <p>
+                        <b>Stok:</b>{" "}
+                        {product.stockType === "ask"
+                          ? "Sorunuz"
+                          : product.stockQuantity}
+                      </p>
+                    </div>
+
+                    <div className="mt-4 flex gap-2">
                       <Link
                         href={"/admin/products/edit/" + product.id}
-                        className="rounded border px-3 py-1"
+                        className="flex-1 text-center rounded border px-3 py-2 text-sm"
                       >
                         Duzenle
                       </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+
+                      <button
+                        onClick={() => handleDelete(product.id)}
+                        className="flex-1 rounded bg-red-500 px-3 py-2 text-sm text-white"
+                      >
+                        Sil
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
     </>
