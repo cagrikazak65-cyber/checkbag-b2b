@@ -28,6 +28,16 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# environment
+.env
+.env.local
+.env.*.local
+
+# sqlite database
+prisma/*.db
+prisma/*.db-journal
+public/uploads/
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
@@ -39,3 +49,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/app/generated/prisma

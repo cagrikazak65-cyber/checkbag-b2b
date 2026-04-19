@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User model - Admin ve müşteri kullanıcıları
+model User {
+  id        Int       @id @default(autoincrement())
+  username  String    @unique
+  password  String
+  role      String    @default("customer") // "admin" | "customer"
+  status    String    @default("Aktif") // "Aktif" | "Pasif"
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // İlişkiler
+  customer  Customer?
+}
+
+// Customer model - B2B müşteri şirketleri
+model Customer {
+  id          Int       @id @default(autoincrement())
+  company     String    @unique
+  contactName String
+  phone       String
+  address     String
+  taxOffice   String
+  taxNumber   String    @unique
+  status      String    @default("Aktif") // "Aktif" | "Pasif"
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // İlişkiler
+  userId      Int       @unique
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders      Order[]
+  cartItems   CartItem[]
+}
+
+// Product model - Ürünler
+model Product {
+  id             Int       @id @default(autoincrement())
+  name           String
+  category       String
+  price          String    // Sayısal, virgüllü format depolanır (örn: "1.250,00")
+  priceCents     Int       @default(0) // Hesaplama için kuruş bazlı değer
+  stockType      String    // "quantity" | "ask"
+  stockQuantity  Int?      // null ise "ask" tipi demektir
+  description    String?
+  image          String?   // Base64 veya URL
+  status         String    @default("Aktif") // "Aktif" | "Pasif"
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // İlişkiler
+  orderItems     OrderItem[]
+  cartItems      CartItem[]
+}
+
+// CartItem model - Sepet öğeleri
+model CartItem {
+  id         Int     @id @default(autoincrement())
+  quantity   Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // İlişkiler
+  customerId Int
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  productId  Int
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, productId])
+}
+
+// Order model - Siparişler
+model Order {
+  id            Int       @id @default(autoincrement())
+  status        String    @default("Beklemede") // "Beklemede" | "Onaylandi" | "Reddedildi" | "Sevk Edildi" | "Teslim Edildi"
+  totalAmount   String    // Sayısal, virgüllü format
+  totalAmountCents Int    @default(0) // Hesaplama için kuruş bazlı toplam
+  paymentMethod String    @default("EFT / Havale")
+  note          String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // İlişkiler
+  customerId    Int
+  customer      Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  items         OrderItem[]
+}
+
+// OrderItem model - Sipariş satırları
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  quantity  Int
+  price     String  // Satın alım anındaki fiyat snapshot'ı
+  priceCents Int    @default(0) // Satın alım anındaki kuruş bazlı fiyat snapshot'ı
+
+  // İlişkiler
+  orderId   Int
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+}
