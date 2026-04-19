@@ -1,16 +1,21 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: checkbag-b2b-postgres
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: checkbag-b2b-app
     restart: unless-stopped
-    environment:
-      POSTGRES_DB: checkbag_b2b
-      POSTGRES_USER: checkbag
-      POSTGRES_PASSWORD: checkbag_password
     ports:
-      - "5432:5432"
+      - "127.0.0.1:${APP_PORT:-3001}:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      AUTH_SECRET: ${AUTH_SECRET}
+      DATABASE_URL: ${DATABASE_URL:-file:/app/data/checkbag.db}
     volumes:
-      - checkbag_postgres_data:/var/lib/postgresql/data
+      - checkbag_app_data:/app/data
+      - checkbag_uploads:/app/public/uploads
 
 volumes:
-  checkbag_postgres_data:
+  checkbag_app_data:
+  checkbag_uploads:

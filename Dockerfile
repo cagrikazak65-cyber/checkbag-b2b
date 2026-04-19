@@ -1,46 +1,46 @@
-# ---------- 1. aşama: bağımlılıkları kur ----------
-FROM node:20-alpine AS deps
+FROM node:20-bookworm-slim AS base
 
 WORKDIR /app
+
+ENV NEXT_TELEMETRY_DISABLED=1
+
+FROM base AS deps
 
 COPY package.json package-lock.json ./
 RUN npm ci
 
-
-# ---------- 2. aşama: build al ----------
-FROM node:20-alpine AS builder
-
-WORKDIR /app
+FROM base AS builder
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+RUN npx prisma generate
 RUN npm run build
 
-
-# ---------- 3. aşama: production container ----------
-FROM node:20-alpine AS runner
+FROM node:20-bookworm-slim AS runner
 
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=3000
+ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
 
-# Güvenlik için root olmayan kullanıcı
-RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
-
-# Sadece production bağımlılıklarını kur
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
-# Build çıktıları ve gerekli dosyalar
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/next.config.ts ./next.config.ts
 
-USER nextjs
+RUN mkdir -p /app/data /app/public/uploads/products \
+  && chown -R node:node /app
+
+USER node
 
 EXPOSE 3000
 
-CMD ["npm", "run", "start"]
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run start -- --hostname 0.0.0.0 --port 3000"]
