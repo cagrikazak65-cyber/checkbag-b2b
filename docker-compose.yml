@@ -10,8 +10,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
+      HOSTNAME: 0.0.0.0
       AUTH_SECRET: ${AUTH_SECRET}
-      DATABASE_URL: ${DATABASE_URL:-file:/app/data/checkbag.db}
+      DATABASE_URL: ${DATABASE_URL}
     volumes:
       - checkbag_app_data:/app/data
       - checkbag_uploads:/app/public/uploads
