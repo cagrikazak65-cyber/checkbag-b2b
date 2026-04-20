@@ -1,7 +1,7 @@
 "use client";
 
 import Navbar from "@/client/components/Navbar";
-import Image from "next/image";
+import ProductImage from "@/client/components/ProductImage";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -23,19 +23,32 @@ export default function CartPage() {
   const router = useRouter();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const loadCart = async () => {
-      const response = await fetch("/api/cart", { cache: "no-store" });
+      try {
+        setError("");
+        const response = await fetch("/api/cart", { cache: "no-store" });
 
-      if (response.status === 401) {
-        router.push("/login");
-        return;
+        if (response.status === 401) {
+          router.push("/login");
+          return;
+        }
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          setError(data.error || "Sepet yuklenemedi.");
+          return;
+        }
+
+        setCartItems(data.cartItems ?? []);
+      } catch {
+        setError("Sepet yuklenirken bir hata olustu.");
+      } finally {
+        setIsLoading(false);
       }
-
-      const data = await response.json();
-      setCartItems(data.cartItems ?? []);
-      setIsLoading(false);
     };
 
     void loadCart();
@@ -145,6 +158,8 @@ export default function CartPage() {
 
           {isLoading ? (
             <div className="empty-state">Sepet yükleniyor...</div>
+          ) : error ? (
+            <div className="empty-state">{error}</div>
           ) : cartItems.length === 0 ? (
             <div className="empty-state">Sepetiniz şu anda boş.</div>
           ) : (
@@ -155,19 +170,12 @@ export default function CartPage() {
                     <div className="flex flex-col gap-4 md:flex-row">
                       <div className="w-full md:w-44">
                         <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border bg-gray-50 p-2">
-                          {item.image ? (
-                            <Image
-                              src={item.image}
-                              alt={item.name}
-                              fill
-                              sizes="176px"
-                              className="object-contain p-2"
-                            />
-                          ) : (
-                            <div className="flex h-full items-center justify-center text-sm text-gray-400">
-                              Görsel yok
-                            </div>
-                          )}
+                          <ProductImage
+                            src={item.image}
+                            alt={item.name}
+                            sizes="176px"
+                            className="object-contain p-2"
+                          />
                         </div>
                       </div>
 

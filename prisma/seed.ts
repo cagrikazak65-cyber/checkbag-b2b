@@ -60,6 +60,7 @@ async function main() {
         stockType: "quantity",
         stockQuantity: 100,
         description: "Kaliteli A4 çanta",
+        image: "/logo.png",
         status: "Aktif",
       },
       create: {
@@ -70,6 +71,7 @@ async function main() {
         stockType: "quantity",
         stockQuantity: 100,
         description: "Kaliteli A4 çanta",
+        image: "/logo.png",
         status: "Aktif",
       },
     }),
@@ -83,6 +85,7 @@ async function main() {
         stockType: "quantity",
         stockQuantity: 250,
         description: "Özel defter",
+        image: "/logo.png",
         status: "Aktif",
       },
       create: {
@@ -93,6 +96,7 @@ async function main() {
         stockType: "quantity",
         stockQuantity: 250,
         description: "Özel defter",
+        image: "/logo.png",
         status: "Aktif",
       },
     }),
@@ -106,6 +110,7 @@ async function main() {
         stockType: "ask",
         stockQuantity: null,
         description: "Premium A3 kağıdı - talep üzerine",
+        image: "/logo.png",
         status: "Aktif",
       },
       create: {
@@ -116,6 +121,7 @@ async function main() {
         stockType: "ask",
         stockQuantity: null,
         description: "Premium A3 kağıdı - talep üzerine",
+        image: "/logo.png",
         status: "Aktif",
       },
     }),

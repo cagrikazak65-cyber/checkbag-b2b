@@ -1,7 +1,7 @@
 "use client";
 
 import Navbar from "@/client/components/Navbar";
-import Image from "next/image";
+import ProductImage from "@/client/components/ProductImage";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -23,29 +23,41 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [quantities, setQuantities] = useState<Record<number, number>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("Tümü");
 
   useEffect(() => {
     const loadProducts = async () => {
-      const response = await fetch("/api/products", { cache: "no-store" });
+      try {
+        setError("");
+        const response = await fetch("/api/products", { cache: "no-store" });
 
-      if (response.status === 401) {
-        router.push("/login");
-        return;
+        if (response.status === 401) {
+          router.push("/login");
+          return;
+        }
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          setError(data.error || "Urunler yuklenemedi.");
+          return;
+        }
+
+        const activeProducts: Product[] = data.products ?? [];
+        const initialQuantities: Record<number, number> = {};
+        activeProducts.forEach((product) => {
+          initialQuantities[product.id] = 1;
+        });
+
+        setProducts(activeProducts);
+        setQuantities(initialQuantities);
+      } catch {
+        setError("Urunler yuklenirken bir hata olustu.");
+      } finally {
+        setIsLoading(false);
       }
-
-      const data = await response.json();
-      const activeProducts: Product[] = data.products ?? [];
-
-      const initialQuantities: Record<number, number> = {};
-      activeProducts.forEach((product) => {
-        initialQuantities[product.id] = 1;
-      });
-
-      setProducts(activeProducts);
-      setQuantities(initialQuantities);
-      setIsLoading(false);
     };
 
     void loadProducts();
@@ -167,6 +179,8 @@ export default function ProductsPage() {
 
           {isLoading ? (
             <div className="empty-state">Ürünler yükleniyor...</div>
+          ) : error ? (
+            <div className="empty-state">{error}</div>
           ) : products.length === 0 ? (
             <div className="empty-state">Gösterilecek ürün bulunamadı.</div>
           ) : (
@@ -214,19 +228,11 @@ export default function ProductsPage() {
                     return (
                       <div key={product.id} className="panel-card">
                         <div className="panel-card-image relative">
-                          {product.image ? (
-                            <Image
-                              src={product.image}
-                              alt={product.name}
-                              fill
-                              sizes="(min-width: 1280px) 33vw, (min-width: 640px) 50vw, 100vw"
-                              className="object-contain p-3"
-                            />
-                          ) : (
-                            <div className="flex h-full items-center justify-center text-sm text-gray-400">
-                              Görsel yok
-                            </div>
-                          )}
+                          <ProductImage
+                            src={product.image}
+                            alt={product.name}
+                            sizes="(min-width: 1280px) 33vw, (min-width: 640px) 50vw, 100vw"
+                          />
                         </div>
 
                         <div className="panel-card-content">
