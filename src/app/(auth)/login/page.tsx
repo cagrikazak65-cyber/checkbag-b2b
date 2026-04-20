@@ -31,10 +31,18 @@ export default function LoginPage() {
           password: trimmedPassword,
         }),
       });
-      const data = await response.json();
+      const contentType = response.headers.get("content-type");
+      const data = contentType?.includes("application/json")
+        ? await response.json()
+        : null;
 
       if (!response.ok) {
-        alert(data.error || "Giriş yapılamadı.");
+        alert(data?.error || "Giriş yapılamadı. Lütfen sunucu ayarlarını kontrol edin.");
+        return;
+      }
+
+      if (!data?.user?.role) {
+        alert("Giriş cevabı okunamadı. Lütfen tekrar deneyin.");
         return;
       }
 
@@ -48,6 +56,8 @@ export default function LoginPage() {
 
       router.push(targetPath);
       router.refresh();
+    } catch {
+      alert("Giriş sırasında beklenmeyen bir hata oluştu.");
     } finally {
       setIsSubmitting(false);
     }
