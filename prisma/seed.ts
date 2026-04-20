@@ -1,6 +1,18 @@
 import { PrismaClient } from "@prisma/client";
-import { hashPassword } from "../src/lib/security";
-import { parsePriceCents } from "../src/lib/api/format";
+import { randomBytes, scryptSync } from "crypto";
+
+const PASSWORD_PREFIX = "scrypt";
+
+function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const hash = scryptSync(password, salt, 64).toString("hex");
+  return `${PASSWORD_PREFIX}:${salt}:${hash}`;
+}
+
+function parsePriceCents(price: string) {
+  const cleaned = String(price).replace(/[^\d]/g, "");
+  return Number(cleaned) || 0;
+}
 
 const prisma = new PrismaClient();
 
