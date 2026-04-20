@@ -75,6 +75,16 @@ npm run db:generate
 npm run db:studio
 ```
 
+## Lokal Ortam Ayarı
+
+Lokal geliştirmede Prisma'nın SQLite veritabanına bağlanması için proje kökünde `.env` dosyası oluştur:
+
+```env
+DATABASE_URL="file:./prisma/dev.db"
+```
+
+`.env` dosyaları Git'e eklenmez; her geliştirici kendi lokal dosyasını oluşturmalıdır.
+
 ## PostgreSQL Hazırlığı
 
 Production için PostgreSQL önerilir. Lokal PostgreSQL denemesi için Docker Compose dosyası eklidir:
