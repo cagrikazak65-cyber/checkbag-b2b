@@ -30,9 +30,6 @@ yarn-debug.log*
 yarn-error.log*
 
 # environment
-.env
-.env.local
-.env.*.local
 
 # sqlite database
 prisma/*.db
@@ -41,7 +38,6 @@ public/uploads/
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-.env*
 !.env.example
 
 # vercel
