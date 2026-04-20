@@ -40,6 +40,7 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [companyName, setCompanyName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"Tümü" | Order["status"]>(
     "Tümü"
@@ -47,24 +48,35 @@ export default function OrdersPage() {
 
   useEffect(() => {
     const loadOrders = async () => {
-      const [meResponse, ordersResponse] = await Promise.all([
-        fetch("/api/auth/me", { cache: "no-store" }),
-        fetch("/api/orders", { cache: "no-store" }),
-      ]);
+      try {
+        setError("");
+        const [meResponse, ordersResponse] = await Promise.all([
+          fetch("/api/auth/me", { cache: "no-store" }),
+          fetch("/api/orders", { cache: "no-store" }),
+        ]);
 
-      if (meResponse.status === 401 || ordersResponse.status === 401) {
-        router.push("/login");
-        return;
+        if (meResponse.status === 401 || ordersResponse.status === 401) {
+          router.push("/login");
+          return;
+        }
+
+        const [meData, ordersData] = await Promise.all([
+          meResponse.json(),
+          ordersResponse.json(),
+        ]);
+
+        if (!meResponse.ok || !ordersResponse.ok) {
+          setError(meData.error || ordersData.error || "Siparisler yuklenemedi.");
+          return;
+        }
+
+        setCompanyName(meData.user?.company || "");
+        setOrders(ordersData.orders ?? []);
+      } catch {
+        setError("Siparisler yuklenirken bir hata olustu.");
+      } finally {
+        setIsLoading(false);
       }
-
-      const [meData, ordersData] = await Promise.all([
-        meResponse.json(),
-        ordersResponse.json(),
-      ]);
-
-      setCompanyName(meData.user?.company || "");
-      setOrders(ordersData.orders ?? []);
-      setIsLoading(false);
     };
 
     void loadOrders();
@@ -156,6 +168,8 @@ export default function OrdersPage() {
 
           {isLoading ? (
             <div className="empty-state">Siparişler yükleniyor...</div>
+          ) : error ? (
+            <div className="empty-state">{error}</div>
           ) : sortedOrders.length === 0 ? (
             <div className="empty-state">Henüz oluşturulmuş bir siparişiniz bulunmuyor.</div>
           ) : (

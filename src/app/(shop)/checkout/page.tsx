@@ -21,6 +21,7 @@ type CartItem = {
 export default function CheckoutPage() {
   const router = useRouter();
   const [isReady, setIsReady] = useState(false);
+  const [error, setError] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [paymentMethod, setPaymentMethod] = useState("EFT / Havale");
@@ -29,30 +30,41 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     const loadCheckout = async () => {
-      const [meResponse, cartResponse] = await Promise.all([
-        fetch("/api/auth/me", { cache: "no-store" }),
-        fetch("/api/cart", { cache: "no-store" }),
-      ]);
+      try {
+        setError("");
+        const [meResponse, cartResponse] = await Promise.all([
+          fetch("/api/auth/me", { cache: "no-store" }),
+          fetch("/api/cart", { cache: "no-store" }),
+        ]);
 
-      if (meResponse.status === 401 || cartResponse.status === 401) {
-        router.push("/login");
-        return;
+        if (meResponse.status === 401 || cartResponse.status === 401) {
+          router.push("/login");
+          return;
+        }
+
+        const [meData, cartData] = await Promise.all([
+          meResponse.json(),
+          cartResponse.json(),
+        ]);
+
+        if (!meResponse.ok || !cartResponse.ok) {
+          setError(meData.error || cartData.error || "Odeme sayfasi yuklenemedi.");
+          return;
+        }
+
+        const parsedCart: CartItem[] = cartData.cartItems ?? [];
+
+        if (parsedCart.length === 0) {
+          router.push("/cart");
+          return;
+        }
+
+        setCompanyName(meData.user?.company || "");
+        setCartItems(parsedCart);
+        setIsReady(true);
+      } catch {
+        setError("Odeme sayfasi yuklenirken bir hata olustu.");
       }
-
-      const [meData, cartData] = await Promise.all([
-        meResponse.json(),
-        cartResponse.json(),
-      ]);
-      const parsedCart: CartItem[] = cartData.cartItems ?? [];
-
-      if (parsedCart.length === 0) {
-        router.push("/cart");
-        return;
-      }
-
-      setCompanyName(meData.user?.company || "");
-      setCartItems(parsedCart);
-      setIsReady(true);
     };
 
     void loadCheckout();
@@ -130,7 +142,7 @@ export default function CheckoutPage() {
         <Navbar />
         <main className="page-shell">
           <div className="page-container">
-            <div className="empty-state">Yükleniyor...</div>
+            <div className="empty-state">{error || "Yukleniyor..."}</div>
           </div>
         </main>
       </>

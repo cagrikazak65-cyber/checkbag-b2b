@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
+import ProductImage from "@/client/components/ProductImage";
 import Navbar from "@/client/components/Navbar";
 import { useEffect, useMemo, useState } from "react";
 
@@ -21,6 +21,7 @@ type Product = {
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"Tümü" | Product["status"]>(
     "Tümü"
@@ -28,16 +29,24 @@ export default function AdminProductsPage() {
 
   useEffect(() => {
     const loadProducts = async () => {
-      const response = await fetch("/api/admin/products", { cache: "no-store" });
+      try {
+        setError("");
+        const response = await fetch("/api/admin/products", {
+          cache: "no-store",
+        });
+        const data = await response.json();
 
-      if (!response.ok) {
+        if (!response.ok) {
+          setError(data.error || "Urunler yuklenemedi.");
+          return;
+        }
+
+        setProducts(data.products ?? []);
+      } catch {
+        setError("Urunler yuklenirken bir hata olustu.");
+      } finally {
         setIsLoading(false);
-        return;
       }
-
-      const data = await response.json();
-      setProducts(data.products ?? []);
-      setIsLoading(false);
     };
 
     void loadProducts();
@@ -102,6 +111,8 @@ export default function AdminProductsPage() {
             <div className="rounded-2xl bg-white p-6 shadow-sm">
               Ürünler yükleniyor...
             </div>
+          ) : error ? (
+            <div className="rounded-2xl bg-white p-6 shadow-sm">{error}</div>
           ) : products.length === 0 ? (
             <div className="rounded-2xl bg-white p-6 shadow-sm">
               Henüz ürün yok.
@@ -147,19 +158,12 @@ export default function AdminProductsPage() {
                       className="overflow-hidden rounded-2xl bg-white shadow-md"
                     >
                       <div className="relative aspect-[3/4] w-full bg-gray-100">
-                        {product.image ? (
-                          <Image
-                            src={product.image}
-                            alt={product.name}
-                            fill
-                            sizes="(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw"
-                            className="object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-full items-center justify-center text-gray-400">
-                            Görsel yok
-                          </div>
-                        )}
+                        <ProductImage
+                          src={product.image}
+                          alt={product.name}
+                          sizes="(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw"
+                          className="object-cover"
+                        />
                       </div>
 
                       <div className="p-4">
