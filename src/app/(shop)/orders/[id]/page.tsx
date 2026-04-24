@@ -3,6 +3,7 @@
 import Navbar from "@/client/components/Navbar";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { formatCurrencyFromCents } from "@/lib/money";
 
 type OrderItem = {
   id: number;
@@ -11,6 +12,10 @@ type OrderItem = {
   price?: string;
   priceCents?: number;
   quantity: number;
+  vatRate?: number;
+  vatAmount?: number;
+  lineSubtotal?: number;
+  lineTotal?: number;
 };
 
 type Order = {
@@ -19,6 +24,10 @@ type Order = {
   items: OrderItem[];
   status: "Beklemede" | "Onaylandi" | "Reddedildi" | "Sevk Edildi" | "Teslim Edildi";
   createdAt: string;
+  subtotal: number;
+  subtotalDisplay?: string;
+  totalVat: number;
+  totalVatDisplay?: string;
   totalAmount: number;
   totalAmountDisplay?: string;
   paymentMethod?: string;
@@ -40,13 +49,6 @@ function getStatusStyle(status: Order["status"]) {
     default:
       return "bg-gray-100 text-gray-700";
   }
-}
-
-function formatMoney(cents: number) {
-  return (cents / 100).toLocaleString("tr-TR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
 }
 
 export default function OrderDetailPage() {
@@ -150,6 +152,8 @@ export default function OrderDetailPage() {
                       <th className="px-3 py-3 font-medium">Kategori</th>
                       <th className="px-3 py-3 font-medium">Adet</th>
                       <th className="px-3 py-3 font-medium">Birim Fiyat</th>
+                      <th className="px-3 py-3 font-medium">Ara Toplam</th>
+                      <th className="px-3 py-3 font-medium">KDV</th>
                       <th className="px-3 py-3 font-medium">Satır Toplamı</th>
                     </tr>
                   </thead>
@@ -164,10 +168,25 @@ export default function OrderDetailPage() {
                         </td>
                         <td className="px-3 py-3">{item.category || "-"}</td>
                         <td className="px-3 py-3">{item.quantity}</td>
-                        <td className="px-3 py-3">{item.price || "-"}</td>
+                        <td className="px-3 py-3">
+                          {typeof item.priceCents === "number"
+                            ? formatCurrencyFromCents(item.priceCents)
+                            : "-"}
+                        </td>
+                        <td className="px-3 py-3">
+                          {typeof item.lineSubtotal === "number"
+                            ? formatCurrencyFromCents(item.lineSubtotal)
+                            : "-"}
+                        </td>
+                        <td className="px-3 py-3">
+                          {typeof item.vatRate === "number" &&
+                          typeof item.vatAmount === "number"
+                            ? `%${item.vatRate} (${formatCurrencyFromCents(item.vatAmount)})`
+                            : "-"}
+                        </td>
                         <td className="px-3 py-3 font-medium text-gray-900">
-                          {item.priceCents
-                            ? `${formatMoney(item.priceCents * item.quantity)} TL`
+                          {typeof item.lineTotal === "number"
+                            ? formatCurrencyFromCents(item.lineTotal)
                             : "-"}
                         </td>
                       </tr>
@@ -189,10 +208,22 @@ export default function OrderDetailPage() {
                 </div>
 
                 <div className="rounded-2xl bg-gray-50 p-4">
-                  <p className="text-sm text-gray-600">Genel Toplam</p>
-                  <p className="mt-2 text-2xl font-bold text-gray-900">
-                    {order.totalAmountDisplay || formatMoney(order.totalAmount)} TL
-                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm text-gray-600">
+                      <span>Ara Toplam</span>
+                      <span>{order.subtotalDisplay || formatCurrencyFromCents(order.subtotal)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm text-gray-600">
+                      <span>Toplam KDV</span>
+                      <span>{order.totalVatDisplay || formatCurrencyFromCents(order.totalVat)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Genel Toplam</span>
+                      <span className="text-2xl font-bold text-gray-900">
+                        {order.totalAmountDisplay || formatCurrencyFromCents(order.totalAmount)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

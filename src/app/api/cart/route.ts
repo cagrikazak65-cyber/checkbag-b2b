@@ -1,7 +1,8 @@
 import { requireCustomer } from "@/lib/auth";
 import { prismaErrorResponse } from "@/lib/api/errors";
-import { formatProduct } from "@/lib/api/format";
+import { formatCartItem } from "@/lib/api/format";
 import { prisma } from "@/lib/prisma";
+import { calculateOrderPricing } from "@/lib/pricing";
 import { NextRequest, NextResponse } from "next/server";
 
 async function readBody(req: NextRequest) {
@@ -15,11 +16,26 @@ async function getCart(customerId: number) {
     orderBy: { createdAt: "asc" },
   });
 
-  return items.map((item) => ({
-    ...formatProduct(item.product),
-    cartItemId: item.id,
-    quantity: item.quantity,
-  }));
+  return items.map(formatCartItem);
+}
+
+function getCartSummary(cartItems: Awaited<ReturnType<typeof getCart>>) {
+  const totals = calculateOrderPricing(
+    cartItems.map((item) => ({
+      quantity: item.quantity,
+      unitPriceCents: item.priceCents,
+      vatRate: item.vatRate,
+      lineSubtotalCents: item.lineSubtotal,
+      vatAmountCents: item.vatAmount,
+      lineTotalCents: item.lineTotal,
+    }))
+  );
+
+  return {
+    subtotal: totals.subtotalCents,
+    totalVat: totals.totalVatCents,
+    grandTotal: totals.grandTotalCents,
+  };
 }
 
 export async function GET(req: NextRequest) {
@@ -29,7 +45,8 @@ export async function GET(req: NextRequest) {
     return error;
   }
 
-  return NextResponse.json({ cartItems: await getCart(user.customerId!) });
+  const cartItems = await getCart(user.customerId!);
+  return NextResponse.json({ cartItems, ...getCartSummary(cartItems) });
 }
 
 export async function POST(req: NextRequest) {
@@ -87,7 +104,8 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  return NextResponse.json({ cartItems: await getCart(user.customerId!) });
+  const cartItems = await getCart(user.customerId!);
+  return NextResponse.json({ cartItems, ...getCartSummary(cartItems) });
 }
 
 export async function PATCH(req: NextRequest) {
@@ -135,7 +153,8 @@ export async function PATCH(req: NextRequest) {
     throw caught;
   }
 
-  return NextResponse.json({ cartItems: await getCart(user.customerId!) });
+  const cartItems = await getCart(user.customerId!);
+  return NextResponse.json({ cartItems, ...getCartSummary(cartItems) });
 }
 
 export async function DELETE(req: NextRequest) {
@@ -159,7 +178,5 @@ export async function DELETE(req: NextRequest) {
   }
 
   const cartItems = await getCart(user.customerId!);
-  const totalAmount = cartItems.reduce((sum, item) => sum + item.priceCents * item.quantity, 0);
-
-  return NextResponse.json({ cartItems, totalAmount });
+  return NextResponse.json({ cartItems, ...getCartSummary(cartItems) });
 }

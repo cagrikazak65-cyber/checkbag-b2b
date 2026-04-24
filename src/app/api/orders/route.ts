@@ -1,6 +1,7 @@
 import { requireCustomer } from "@/lib/auth";
 import { formatOrder, formatPriceFromCents } from "@/lib/api/format";
 import { prisma } from "@/lib/prisma";
+import { calculateLinePricing, calculateOrderPricing } from "@/lib/pricing";
 import { NextRequest, NextResponse } from "next/server";
 
 const PAYMENT_METHODS = [
@@ -89,12 +90,20 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const totalAmount = cartItems.reduce(
-        (sum, item) => sum + item.product.priceCents * item.quantity,
-        0
+      const pricedItems = cartItems.map((item) => ({
+        item,
+        pricing: calculateLinePricing({
+          unitPriceCents: item.product.priceCents,
+          quantity: item.quantity,
+          vatRate: item.product.vatRate,
+        }),
+      }));
+
+      const totals = calculateOrderPricing(
+        pricedItems.map(({ pricing }) => pricing)
       );
 
-      if (totalAmount <= 0) {
+      if (totals.grandTotalCents <= 0) {
         throw new Error("INVALID_TOTAL");
       }
 
@@ -103,14 +112,22 @@ export async function POST(req: NextRequest) {
           customerId: user.customerId!,
           paymentMethod,
           note,
-          totalAmount: formatPriceFromCents(totalAmount),
-          totalAmountCents: totalAmount,
+          subtotalCents: totals.subtotalCents,
+          totalVatCents: totals.totalVatCents,
+          totalAmount: formatPriceFromCents(totals.grandTotalCents),
+          totalAmountCents: totals.grandTotalCents,
           items: {
-            create: cartItems.map((item) => ({
+            create: pricedItems.map(({ item, pricing }) => ({
               productId: item.productId,
               quantity: item.quantity,
               price: item.product.price,
               priceCents: item.product.priceCents,
+              productNameSnapshot: item.product.name,
+              productCategorySnapshot: item.product.category,
+              vatRate: item.product.vatRate,
+              vatAmountCents: pricing.vatAmountCents,
+              lineSubtotalCents: pricing.lineSubtotalCents,
+              lineTotalCents: pricing.lineTotalCents,
             })),
           },
         },

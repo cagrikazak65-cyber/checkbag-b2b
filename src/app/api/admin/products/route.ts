@@ -1,7 +1,7 @@
 import { requireAdmin } from "@/lib/auth";
 import { prismaErrorResponse } from "@/lib/api/errors";
 import { formatProduct, parsePriceCents } from "@/lib/api/format";
-import { parseRecordStatus, parseStockType } from "@/lib/domain";
+import { parseRecordStatus, parseStockType, parseVatRate } from "@/lib/domain";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -13,6 +13,7 @@ function productData(body: Record<string, unknown>) {
     category: String(body.category ?? "").trim(),
     price: String(body.price ?? "").trim(),
     priceCents: parsePriceCents(String(body.price ?? "")),
+    vatRate: parseVatRate(body.vatRate),
     stockType,
     stockQuantity: stockType === "quantity" ? Number(body.stockQuantity ?? 0) : null,
     description: String(body.description ?? "").trim(),
@@ -47,6 +48,10 @@ export async function POST(req: NextRequest) {
 
   if (data.priceCents <= 0) {
     return NextResponse.json({ error: "Lütfen geçerli bir fiyat girin." }, { status: 400 });
+  }
+
+  if (!Number.isInteger(data.vatRate) || data.vatRate < 0 || data.vatRate > 100) {
+    return NextResponse.json({ error: "KDV oranı 0 ile 100 arasında olmalıdır." }, { status: 400 });
   }
 
   if (

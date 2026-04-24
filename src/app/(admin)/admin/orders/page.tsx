@@ -221,9 +221,7 @@ export default function AdminOrdersPage() {
                   </div>
 
                   <div className="mt-4 font-semibold">
-                    Toplam:{" "}
-                    {order.totalAmountDisplay ||
-                      `${order.totalAmount / 100} TL`}
+                    Toplam: {order.totalAmountDisplay || `${order.totalAmount / 100} TL`}
                   </div>
 
                       <div className="mt-4 flex flex-wrap gap-2">

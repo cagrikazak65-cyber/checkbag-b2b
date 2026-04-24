@@ -3,6 +3,7 @@
 import Navbar from "@/client/components/Navbar";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { formatCurrencyFromCents } from "@/lib/money";
 
 type CartItem = {
   id: number;
@@ -10,12 +11,16 @@ type CartItem = {
   category: string;
   price: string;
   priceCents: number;
+  vatRate: number;
   stockType: "quantity" | "ask";
   stockQuantity: number | null;
   status: "Aktif" | "Pasif";
   description?: string;
   image?: string;
   quantity: number;
+  vatAmount: number;
+  lineSubtotal: number;
+  lineTotal: number;
 };
 
 export default function CheckoutPage() {
@@ -70,18 +75,16 @@ export default function CheckoutPage() {
     void loadCheckout();
   }, [router]);
 
-  const formatMoney = (cents: number) => {
-    return (cents / 100).toLocaleString("tr-TR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  };
+  const subtotal = useMemo(() => {
+    return cartItems.reduce((sum, item) => sum + item.lineSubtotal, 0);
+  }, [cartItems]);
+
+  const totalVat = useMemo(() => {
+    return cartItems.reduce((sum, item) => sum + item.vatAmount, 0);
+  }, [cartItems]);
 
   const totalAmount = useMemo(() => {
-    return cartItems.reduce(
-      (sum, item) => sum + item.priceCents * item.quantity,
-      0
-    );
+    return cartItems.reduce((sum, item) => sum + item.lineTotal, 0);
   }, [cartItems]);
 
   const handleCreateOrder = async () => {
@@ -255,14 +258,23 @@ export default function CheckoutPage() {
                         Adet: {item.quantity}
                       </p>
                       <p className="text-sm text-gray-700">
-                        Birim Fiyat: {item.price}
+                        Birim Fiyat: {formatCurrencyFromCents(item.priceCents)}
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        Ara Toplam: {formatCurrencyFromCents(item.lineSubtotal)}
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        KDV Oranı: %{item.vatRate}
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        KDV Tutarı: {formatCurrencyFromCents(item.vatAmount)}
                       </p>
                     </div>
 
                     <div className="text-right">
                       <p className="text-sm text-gray-500">Toplam</p>
                       <p className="text-base font-semibold text-gray-900">
-                        {formatMoney(item.priceCents * item.quantity)} TL
+                        {formatCurrencyFromCents(item.lineTotal)}
                       </p>
                     </div>
                   </div>
@@ -270,11 +282,25 @@ export default function CheckoutPage() {
               </div>
 
               <div className="mt-6 rounded-xl bg-gray-50 p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Genel Toplam</span>
-                  <span className="text-xl font-bold text-gray-900">
-                    {formatMoney(totalAmount)} TL
-                  </span>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Ara Toplam</span>
+                    <span className="font-semibold text-gray-900">
+                      {formatCurrencyFromCents(subtotal)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Toplam KDV</span>
+                    <span className="font-semibold text-gray-900">
+                      {formatCurrencyFromCents(totalVat)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Genel Toplam</span>
+                    <span className="text-xl font-bold text-gray-900">
+                      {formatCurrencyFromCents(totalAmount)}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
