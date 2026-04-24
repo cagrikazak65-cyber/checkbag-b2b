@@ -13,6 +13,22 @@ const allowedTypes = new Map([
   ["image/gif", "gif"],
 ]);
 
+function getUploadDirectory() {
+  const configuredDir = process.env.UPLOAD_DIR?.trim();
+
+  if (configuredDir) {
+    return configuredDir;
+  }
+
+  return path.join(process.cwd(), "public", "uploads", "products");
+}
+
+function getPublicUrl(fileName: string) {
+  const basePath = process.env.UPLOAD_URL_BASE?.trim() || "/uploads/products";
+  const normalizedBasePath = basePath.startsWith("/") ? basePath : `/${basePath}`;
+  return `${normalizedBasePath.replace(/\/$/, "")}/${fileName}`;
+}
+
 export async function POST(req: NextRequest) {
   const { error } = await requireAdmin(req);
 
@@ -37,7 +53,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Görsel boyutu 3 MB sınırını aşamaz." }, { status: 400 });
   }
 
-  const uploadDir = path.join(process.cwd(), "public", "uploads", "products");
+  const uploadDir = getUploadDirectory();
   await mkdir(uploadDir, { recursive: true });
 
   const fileName = `${Date.now()}-${randomUUID()}.${extension}`;
@@ -46,5 +62,14 @@ export async function POST(req: NextRequest) {
 
   await writeFile(filePath, buffer);
 
-  return NextResponse.json({ url: `/uploads/products/${fileName}` }, { status: 201 });
+  const url = getPublicUrl(fileName);
+
+  return NextResponse.json(
+    {
+      url,
+      imageUrl: url,
+      imagePath: `uploads/products/${fileName}`,
+    },
+    { status: 201 }
+  );
 }

@@ -63,6 +63,22 @@ npx prisma generate
 npm run seed
 ```
 
+## Production'da SQLite ile Devam Edilecekse
+
+Bu repoda `docker-compose.yml` artık varsayılan olarak kalıcı SQLite dosyasını `/app/data/prod.db`
+altına yazar:
+
+```env
+DATABASE_URL="file:/app/data/prod.db"
+UPLOAD_DIR="/app/public/uploads/products"
+UPLOAD_URL_BASE="/uploads/products"
+```
+
+Bu yapı için aşağıdaki volume'lerin bağlı kalması gerekir:
+
+- `checkbag_app_data:/app/data`
+- `checkbag_uploads:/app/public/uploads/products`
+
 ## Mevcut SQLite Verisini Taşıma
 
 Eğer SQLite içinde korunması gereken gerçek veri varsa:

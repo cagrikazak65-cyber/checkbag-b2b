@@ -4,6 +4,7 @@ import Navbar from "@/client/components/Navbar";
 import ProductImage from "@/client/components/ProductImage";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { formatCurrencyFromCents } from "@/lib/money";
 
 type CartItem = {
   id: number;
@@ -11,12 +12,16 @@ type CartItem = {
   category: string;
   price: string;
   priceCents: number;
+  vatRate: number;
   stockType: "quantity" | "ask";
   stockQuantity: number | null;
   status: "Aktif" | "Pasif";
   description?: string;
   image?: string;
   quantity: number;
+  vatAmount: number;
+  lineSubtotal: number;
+  lineTotal: number;
 };
 
 export default function CartPage() {
@@ -53,13 +58,6 @@ export default function CartPage() {
 
     void loadCart();
   }, [router]);
-
-  const formatMoney = (cents: number) => {
-    return (cents / 100).toLocaleString("tr-TR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  };
 
   const updateQuantity = async (index: number, value: string) => {
     if (value === "") {
@@ -125,12 +123,22 @@ export default function CartPage() {
     setCartItems([]);
   };
 
-  const lineTotal = (item: CartItem) => {
-    return item.priceCents * item.quantity;
+  const lineSubtotal = (item: CartItem) => {
+    return item.lineSubtotal;
   };
 
+  const subtotal = useMemo(
+    () => cartItems.reduce((sum, item) => sum + item.lineSubtotal, 0),
+    [cartItems]
+  );
+
+  const totalVat = useMemo(
+    () => cartItems.reduce((sum, item) => sum + item.vatAmount, 0),
+    [cartItems]
+  );
+
   const grandTotal = useMemo(
-    () => cartItems.reduce((sum, item) => sum + item.priceCents * item.quantity, 0),
+    () => cartItems.reduce((sum, item) => sum + item.lineTotal, 0),
     [cartItems]
   );
 
@@ -189,8 +197,10 @@ export default function CartPage() {
 
                         <div className="mt-3 grid gap-2 text-sm text-gray-700">
                           <p className="text-base font-semibold text-gray-900">
-                            Fiyat: {item.price}
+                            Birim Fiyat: {formatCurrencyFromCents(item.priceCents)}
                           </p>
+
+                          <p>KDV Oranı: %{item.vatRate}</p>
 
                           <p>
                             Stok:{" "}
@@ -200,7 +210,15 @@ export default function CartPage() {
                           </p>
 
                           <p className="text-base font-semibold text-gray-900">
-                            Satır Toplamı: {formatMoney(lineTotal(item))} TL
+                            Ara Toplam: {formatCurrencyFromCents(lineSubtotal(item))}
+                          </p>
+
+                          <p className="text-sm text-gray-700">
+                            KDV Tutarı: {formatCurrencyFromCents(item.vatAmount)}
+                          </p>
+
+                          <p className="text-base font-semibold text-gray-900">
+                            Genel Toplam: {formatCurrencyFromCents(item.lineTotal)}
                           </p>
                         </div>
 
@@ -249,9 +267,23 @@ export default function CartPage() {
                   </div>
 
                   <div className="flex items-center justify-between">
+                    <span>Ara Toplam</span>
+                    <span className="text-lg font-bold text-gray-900">
+                      {formatCurrencyFromCents(subtotal)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span>KDV Tutarı</span>
+                    <span className="font-semibold">
+                      {formatCurrencyFromCents(totalVat)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
                     <span>Genel Toplam</span>
                     <span className="text-lg font-bold text-gray-900">
-                      {formatMoney(grandTotal)} TL
+                      {formatCurrencyFromCents(grandTotal)}
                     </span>
                   </div>
                 </div>
