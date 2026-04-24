@@ -49,6 +49,7 @@ model Product {
   category       String
   price          String    // Sayısal, virgüllü format depolanır (örn: "1.250,00")
   priceCents     Int       @default(0) // Hesaplama için kuruş bazlı değer
+  vatRate        Int       @default(20) // KDV oranı, yüzde bazlı tutulur
   stockType      String    // "quantity" | "ask"
   stockQuantity  Int?      // null ise "ask" tipi demektir
   description    String?
@@ -82,6 +83,8 @@ model CartItem {
 model Order {
   id            Int       @id @default(autoincrement())
   status        String    @default("Beklemede") // "Beklemede" | "Onaylandi" | "Reddedildi" | "Sevk Edildi" | "Teslim Edildi"
+  subtotalCents Int       @default(0) // KDV hariç ara toplam
+  totalVatCents Int       @default(0) // Sipariş toplam KDV tutarı
   totalAmount   String    // Sayısal, virgüllü format
   totalAmountCents Int    @default(0) // Hesaplama için kuruş bazlı toplam
   paymentMethod String    @default("EFT / Havale")
@@ -97,10 +100,16 @@ model Order {
 
 // OrderItem model - Sipariş satırları
 model OrderItem {
-  id        Int     @id @default(autoincrement())
-  quantity  Int
-  price     String  // Satın alım anındaki fiyat snapshot'ı
-  priceCents Int    @default(0) // Satın alım anındaki kuruş bazlı fiyat snapshot'ı
+  id                  Int     @id @default(autoincrement())
+  quantity            Int
+  price               String  // Satın alım anındaki birim fiyat snapshot'ı (KDV hariç)
+  priceCents          Int     @default(0) // Satın alım anındaki kuruş bazlı birim fiyat snapshot'ı
+  productNameSnapshot String  @default("")
+  productCategorySnapshot String @default("")
+  vatRate             Int     @default(20)
+  vatAmountCents      Int     @default(0)
+  lineSubtotalCents   Int     @default(0)
+  lineTotalCents      Int     @default(0)
 
   // İlişkiler
   orderId   Int
