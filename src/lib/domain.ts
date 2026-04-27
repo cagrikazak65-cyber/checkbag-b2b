@@ -22,6 +22,16 @@ export function parseStockType(value: unknown): StockType {
   return value === "ask" ? "ask" : "quantity";
 }
 
+export function parseVatRate(value: unknown) {
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed)) {
+    return 20;
+  }
+
+  return Math.min(100, Math.max(0, Math.round(parsed)));
+}
+
 export function isOrderStatus(value: unknown): value is OrderStatus {
   return ORDER_STATUSES.includes(value as OrderStatus);
 }

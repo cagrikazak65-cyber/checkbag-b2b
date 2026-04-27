@@ -4,6 +4,7 @@ import Link from "next/link";
 import ProductImage from "@/client/components/ProductImage";
 import Navbar from "@/client/components/Navbar";
 import { useEffect, useMemo, useState } from "react";
+import { formatCurrencyFromCents } from "@/lib/money";
 
 type Product = {
   id: number;
@@ -11,6 +12,7 @@ type Product = {
   category: string;
   price: string;
   priceCents: number;
+  vatRate: number;
   stockType: "quantity" | "ask";
   stockQuantity: number | null;
   description?: string;
@@ -82,7 +84,23 @@ export default function AdminProductsPage() {
       return;
     }
 
-    setProducts((current) => current.filter((p) => p.id !== id));
+    const data = await response.json();
+
+    setProducts((current) => {
+      if (data.mode === "deactivated" && data.product) {
+        return current.map((product) =>
+          product.id === id ? data.product : product
+        );
+      }
+
+      return current.filter((product) => product.id !== id);
+    });
+
+    alert(
+      data.mode === "deactivated"
+        ? "Ürün geçmiş siparişler nedeniyle pasife alındı."
+        : "Ürün silindi."
+    );
   };
 
   return (
@@ -194,7 +212,11 @@ export default function AdminProductsPage() {
 
                         <div className="mt-3 text-sm space-y-1">
                           <p>
-                            <b>Fiyat:</b> {product.price}
+                            <b>Fiyat:</b> {formatCurrencyFromCents(product.priceCents)}
+                          </p>
+
+                          <p>
+                            <b>KDV:</b> %{product.vatRate}
                           </p>
 
                           <p>

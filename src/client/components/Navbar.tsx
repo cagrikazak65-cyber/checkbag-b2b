@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 type LoggedInUser = {
@@ -33,10 +33,23 @@ export default function Navbar() {
   }, [pathname]);
 
   const handleLogout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
+    const response = await fetch("/api/auth/logout", {
+      method: "POST",
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      alert("Çıkış yapılamadı.");
+      return;
+    }
+
     setUser(null);
     alert("Çıkış yapıldı.");
-    router.push("/login");
+
+    startTransition(() => {
+      router.replace("/login");
+      router.refresh();
+    });
   };
 
   const isAdmin = user?.role === "admin";

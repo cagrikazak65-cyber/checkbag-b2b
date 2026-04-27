@@ -12,10 +12,12 @@ services:
       PORT: 3000
       HOSTNAME: 0.0.0.0
       AUTH_SECRET: ${AUTH_SECRET}
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: ${DATABASE_URL:-file:/app/data/prod.db}
+      UPLOAD_DIR: ${UPLOAD_DIR:-/app/public/uploads/products}
+      UPLOAD_URL_BASE: ${UPLOAD_URL_BASE:-/uploads/products}
     volumes:
       - checkbag_app_data:/app/data
-      - checkbag_uploads:/app/public/uploads
+      - checkbag_uploads:/app/public/uploads/products
 
 volumes:
   checkbag_app_data:

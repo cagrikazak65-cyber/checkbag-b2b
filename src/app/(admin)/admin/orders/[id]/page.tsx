@@ -216,7 +216,7 @@ export default function AdminOrderDetailPage() {
               <aside className="h-fit rounded-2xl bg-white p-6 shadow-sm">
                 <p className="text-sm text-gray-600">Genel Toplam</p>
                 <p className="mt-2 text-3xl font-bold text-gray-900">
-                  {order.totalAmountDisplay || formatMoney(order.totalAmount)} TL
+                  {order.totalAmountDisplay || `${formatMoney(order.totalAmount)} TL`}
                 </p>
 
                 <div className="mt-6">

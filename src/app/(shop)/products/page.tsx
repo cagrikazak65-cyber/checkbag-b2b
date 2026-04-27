@@ -4,6 +4,7 @@ import Navbar from "@/client/components/Navbar";
 import ProductImage from "@/client/components/ProductImage";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { formatCurrencyFromCents } from "@/lib/money";
 
 type Product = {
   id: number;
@@ -11,6 +12,7 @@ type Product = {
   category: string;
   price: string;
   priceCents: number;
+  vatRate: number;
   stockType: "quantity" | "ask";
   stockQuantity: number | null;
   description?: string;
@@ -246,7 +248,11 @@ export default function ProductsPage() {
 
                           <div className="mt-3 space-y-1">
                             <p className="text-base font-semibold text-gray-900">
-                              Fiyat: {product.price}
+                              Fiyat: {formatCurrencyFromCents(product.priceCents)}
+                            </p>
+
+                            <p className="text-sm text-gray-500">
+                              KDV hariç, KDV oranı %{product.vatRate}
                             </p>
 
                             <p className="text-sm text-gray-700">

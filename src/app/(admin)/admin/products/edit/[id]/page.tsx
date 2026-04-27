@@ -11,6 +11,7 @@ type Product = {
   category: string;
   price: string;
   priceCents: number;
+  vatRate: number;
   stockType: "quantity" | "ask";
   stockQuantity: number | null;
   description?: string;
@@ -23,6 +24,7 @@ type ProductForm = {
   name: string;
   category: string;
   price: string;
+  vatRate: string;
   stockType: "quantity" | "ask";
   stockQuantity: string;
   description: string;
@@ -54,6 +56,7 @@ export default function EditProductPage() {
         name: found.name,
         category: found.category,
         price: found.price,
+        vatRate: String(found.vatRate),
         stockType: found.stockType,
         stockQuantity:
           found.stockQuantity !== null ? String(found.stockQuantity) : "",
@@ -84,6 +87,7 @@ export default function EditProductPage() {
     }
 
     const stockQuantity = Number(trimmedForm.stockQuantity);
+    const vatRate = Number(trimmedForm.vatRate);
 
     if (
       trimmedForm.stockType === "quantity" &&
@@ -92,6 +96,11 @@ export default function EditProductPage() {
         stockQuantity < 0)
     ) {
       alert("Stok adedi 0 veya daha büyük bir tam sayı olmalıdır.");
+      return;
+    }
+
+    if (!Number.isInteger(vatRate) || vatRate < 0 || vatRate > 100) {
+      alert("KDV oranı 0 ile 100 arasında bir tam sayı olmalıdır.");
       return;
     }
 
@@ -171,6 +180,15 @@ export default function EditProductPage() {
               className="w-full rounded-lg border px-4 py-2"
               value={form.price}
               onChange={(e) => setForm({ ...form, price: e.target.value })}
+            />
+
+            <input
+              type="number"
+              min="0"
+              max="100"
+              className="w-full rounded-lg border px-4 py-2"
+              value={form.vatRate}
+              onChange={(e) => setForm({ ...form, vatRate: e.target.value })}
             />
 
             <select
